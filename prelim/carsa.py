@@ -15,9 +15,10 @@ def FFDI(precip, rh, tmax, wmax, time_dim='time'):
             relative humidity at 2 m, Squire et al. (2021) uses daily mean relative humidity at 1000 hPa. This is used as H in the
             above equation.
         tmax : xarray DataArray
-            Daily max 2 m temperature [deg C].
+            Daily max 2 m temperature [deg C]. This is used as T in the above equation.
         wmax : xarray DataArray
-            Daily max 10 m wind speed [km/h] (or similar, depending on data availability). Squire et al. (2021) uses daily mean wind speed.
+            Daily max 10 m wind speed [km/h] (or similar, depending on data availability). Squire et al. (2021) uses daily mean wind 
+            speed. This is used as W in the above equation.
         time_dim : str, optional
             Name of the time dimension
             
