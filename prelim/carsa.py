@@ -18,6 +18,8 @@ def FFDI(precip, rh, tmax, wmax, time_dim='time'):
             Daily max 2 m temperature [deg C].
         wmax : xarray DataArray
             Daily max 10 m wind speed [km/h] (or similar, depending on data availability). Squire et al. (2021) uses daily mean wind speed.
+        time_dim : str, optional
+            Name of the time dimension
             
         Returns
         -------
