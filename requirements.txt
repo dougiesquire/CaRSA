@@ -1,6 +1,0 @@
-numpy
-xarray
-zarr
-Cython>=0.15.1
-matplotlib
-cartopy
