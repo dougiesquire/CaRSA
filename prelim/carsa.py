@@ -46,7 +46,7 @@ def excess_heat_factor(temp, climatology_slice=None, time_dim='time'):
         EHF = EHI_sig * max(1, EHI_accl),
         where the Excess Heat significance and acclimatisation indices, EHI_sig and EHI_accl, respectively, are defined as
         EHI_sig = [T_i + T_(i+1) + T_(i+2)] / 3 - T_95,
-        EHI_accl = [T_i + T_(i+1) + T_(i+2)] - [T_(i-1) + ... + T_(i-30)] / 30.
+        EHI_accl = [T_i + T_(i+1) + T_(i+2)] / 3 - [T_(i-1) + ... + T_(i-30)] / 30.
         
         Parameters
         ----------
