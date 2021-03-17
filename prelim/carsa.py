@@ -2,7 +2,8 @@ import xarray as xr
 import numpy as np
 
 def FFDI(precip, rh, tmax, wmax, time_dim='time'):
-    """ Returns the McArthur Forest Fire Danger Index following the formula provided in Dowdy (2018):
+    """
+        Returns the McArthur Forest Fire Danger Index following the formula provided in Dowdy (2018):
         FFDI = D ** 0.987 * exp (0.0338 * T - 0.0345 * H + 0.0234 * W + 0.243147)
         
         Parameters
@@ -11,7 +12,7 @@ def FFDI(precip, rh, tmax, wmax, time_dim='time'):
             Daily total precipitation [mm]. This is used to estimate the drought factor, D, as the 20-day accumulated rainfall
             scaled to lie between 0 and 10, with larger values indicating less precipitation.
         rh : xarray DataArray
-            Daily max relative humidity at 2m [%] (or similar, depending on data availability). Richardson et al. uses mid-afternoon
+            Daily max relative humidity at 2m [%] (or similar, depending on data availability). Richardson et al. (2021) uses mid-afternoon
             relative humidity at 2 m, Squire et al. (2021) uses daily mean relative humidity at 1000 hPa. This is used as H in the
             above equation.
         tmax : xarray DataArray
@@ -26,6 +27,10 @@ def FFDI(precip, rh, tmax, wmax, time_dim='time'):
         -------
         FFDI : xarray DataArray
             Array containing the FFDI.
+            
+        References
+        ----------
+        Dowdy, A. J. (2018). “Climatological Variability of Fire Weather in Australia”. Journal of Applied Meteorology and Climatology 57.2, pp. 221–234. issn: 1558-8424. doi: 10.1175/JAMC-D-17-0167.1.
     """
     
     p20 = precip.rolling({time_dim: 20}).sum()
@@ -33,3 +38,49 @@ def FFDI(precip, rh, tmax, wmax, time_dim='time'):
     D = -10 * ((p20 - p20.min(time_dim)) / (p20.max(time_dim) - p20.min(time_dim))) + 10
     
     return D ** 0.987 * np.exp(0.0338 * tmax - 0.0345 * rh + 0.0234 * wmax + 0.243147)
+
+
+def excess_heat_factor(tmp, climatology_slice='full_period', time_dim='time'):
+    """
+        Calculates the Excess Heat Factor (EHF) following Nairn and Fawcett (2015):
+        EHF = EHI_sig * max(1, EHI_accl),
+        where the Excess Heat significance and acclimatisation indices, EHI_sig and EHI_accl, respectively, are defined as
+        EHI_sig = [T_i + T_(i+1) + T_(i+2)] / 3 - T_95,
+        EHI_accl = [T_i + T_(i+1) + T_(i+2)] - [T_(i-1) + ... + T_(i-30)] / 30.
+        
+        Parameters
+        ----------
+        tmp : xarray DataArray
+            Daily mean temperature [K or deg C]. This is T in the above equation.
+        climatology_slice : slice, optional
+            Climatological period used to calcluate the 95th percentile of tmp. Should be in the format slice('first_year', 'last_year'). Defaults to using the full period of tmp.
+        time_name : string, optional
+            Name of the time dimension.
+
+        Returns
+        -------
+        EHF : xarray DataArray
+            Array containing the EHF.
+            
+        References
+        ----------
+        Nairn, J.R.; Fawcett, R.J.B. The Excess Heat Factor: A Metric for Heatwave Intensity and Its Use in Classifying Heatwave Severity. Int. J. Environ. Res. Public Health 2015, 12, 227-253. https://doi.org/10.3390/ijerph120100227
+    """      
+    
+    tmp = tmp.rename({time_dim: 'time'}) # Ensure the time dimension is called time
+    
+    if climatology_slice == 'full_period': # Get heatwave threshold
+        q95 = da.quantile(q=0.95, dim='time')
+    else:
+        q95 = da.sel(time=climatology_slice).quantile(q=0.95, dim='time')
+    
+    three_day_mean = tmp.rolling(time=3).sum() / 3
+    thirty_day_mean = tmp.rolling(time=30).sum() / 30
+    
+    ehi_sig = three_day_mean - q95
+    
+    ehi_accl = three_day_mean - thirty_day_mean.shift(time=3) #  Shift thirty_day_mean forward 3 days so that last day of each averaging period has the same time
+    
+    ehi_accl_min_1 = xr.where(ehi_accl > 1, ehi_accl, 1) # Ensure minimum value is 1
+    
+    return ehi_sig * ehi_accl_min_1
