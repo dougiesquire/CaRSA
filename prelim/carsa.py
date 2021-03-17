@@ -70,9 +70,9 @@ def excess_heat_factor(tmp, climatology_slice='full_period', time_dim='time'):
     tmp = tmp.rename({time_dim: 'time'}) # Ensure the time dimension is called time
     
     if climatology_slice == 'full_period': # Get heatwave threshold
-        q95 = da.quantile(q=0.95, dim='time')
+        q95 = tmp.quantile(q=0.95, dim='time')
     else:
-        q95 = da.sel(time=climatology_slice).quantile(q=0.95, dim='time')
+        q95 = tmp.sel(time=climatology_slice).quantile(q=0.95, dim='time')
     
     three_day_mean = tmp.rolling(time=3).sum() / 3
     thirty_day_mean = tmp.rolling(time=30).sum() / 30
