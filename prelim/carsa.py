@@ -40,7 +40,7 @@ def FFDI(precip, rh, tmax, wmax, time_dim='time'):
     return D ** 0.987 * np.exp(0.0338 * tmax - 0.0345 * rh + 0.0234 * wmax + 0.243147)
 
 
-def excess_heat_factor(tmp, climatology_slice='full_period', time_dim='time'):
+def excess_heat_factor(temp, climatology_slice=None, time_dim='time'):
     """
         Calculates the Excess Heat Factor (EHF) following Nairn and Fawcett (2015):
         EHF = EHI_sig * max(1, EHI_accl),
@@ -50,10 +50,10 @@ def excess_heat_factor(tmp, climatology_slice='full_period', time_dim='time'):
         
         Parameters
         ----------
-        tmp : xarray DataArray
+        temp : xarray DataArray
             Daily mean temperature [K or deg C]. This is T in the above equation.
         climatology_slice : slice, optional
-            Climatological period used to calcluate the 95th percentile of tmp. Should be in the format slice('first_year', 'last_year'). Defaults to using the full period of tmp.
+            Climatological period used to calcluate the 95th percentile of temp. Should be in the format slice('first_year', 'last_year'). Default is None, which uses the full period of temp.
         time_name : string, optional
             Name of the time dimension.
 
@@ -67,19 +67,17 @@ def excess_heat_factor(tmp, climatology_slice='full_period', time_dim='time'):
         Nairn, J.R.; Fawcett, R.J.B. The Excess Heat Factor: A Metric for Heatwave Intensity and Its Use in Classifying Heatwave Severity. Int. J. Environ. Res. Public Health 2015, 12, 227-253. https://doi.org/10.3390/ijerph120100227
     """      
     
-    tmp = tmp.rename({time_dim: 'time'}) # Ensure the time dimension is called time
-    
-    if climatology_slice == 'full_period': # Get heatwave threshold
-        q95 = tmp.quantile(q=0.95, dim='time')
+    if climatology_slice is None: # Get heatwave threshold (T_95 in above equation)
+        t_95 = temp.quantile(q=0.95, dim=time_dim')
     else:
-        q95 = tmp.sel(time=climatology_slice).quantile(q=0.95, dim='time')
+        t_95 = temp.sel({time_dim: climatology_slice}).quantile(q=0.95, dim=time_dim)
     
-    three_day_mean = tmp.rolling(time=3).sum() / 3
-    thirty_day_mean = tmp.rolling(time=30).sum() / 30
+    three_day_mean = temp.rolling({time_dim: 3}).sum() / 3
+    thirty_day_mean = temp.rolling({time_dim: 30}).sum() / 30
     
-    ehi_sig = three_day_mean - q95
+    ehi_sig = three_day_mean - t_95
     
-    ehi_accl = three_day_mean - thirty_day_mean.shift(time=3) #  Shift thirty_day_mean forward 3 days so that last day of each averaging period has the same time
+    ehi_accl = three_day_mean - thirty_day_mean.shift({time_dim: 3}) #  Shift thirty_day_mean forward 3 days so that last day of each averaging period has the same time
     
     ehi_accl_min_1 = xr.where(ehi_accl > 1, ehi_accl, 1) # Ensure minimum value is 1
     
