@@ -68,7 +68,7 @@ def excess_heat_factor(temp, climatology_slice=None, time_dim='time'):
     """      
     
     if climatology_slice is None: # Get heatwave threshold (T_95 in above equation)
-        t_95 = temp.quantile(q=0.95, dim=time_dim')
+        t_95 = temp.quantile(q=0.95, dim=time_dim)
     else:
         t_95 = temp.sel({time_dim: climatology_slice}).quantile(q=0.95, dim=time_dim)
     
